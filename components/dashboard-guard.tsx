@@ -1,12 +1,19 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
-const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+const configured = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+);
 
-export default function DashboardGuard({ children }: { children: React.ReactNode }) {
+export default function DashboardGuard({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const [checking, setChecking] = useState(configured);
 
@@ -14,12 +21,14 @@ export default function DashboardGuard({ children }: { children: React.ReactNode
     if (!configured) return;
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.replace("/");
+      if (!data.user) router.replace('/');
       else setChecking(false);
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) router.replace("/");
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session) router.replace('/');
+      },
+    );
     return () => listener.subscription.unsubscribe();
   }, [router]);
 

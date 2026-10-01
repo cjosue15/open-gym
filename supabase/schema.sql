@@ -19,12 +19,14 @@ create table public.routines (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   name text not null, weekday smallint check (weekday between 0 and 6),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(), deleted_at timestamptz
 );
 create table public.routine_exercises (
   id uuid primary key default gen_random_uuid(),
   routine_id uuid not null references public.routines(id) on delete cascade,
-  name text not null, position smallint not null, notes text
+  name text not null, position smallint not null, notes text,
+  target_sets smallint not null default 3 check (target_sets > 0),
+  target_reps smallint not null default 10 check (target_reps > 0)
 );
 create table public.workouts (
   id uuid primary key default gen_random_uuid(),

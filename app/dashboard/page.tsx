@@ -1,10 +1,5 @@
-import DashboardGuard from "@/components/dashboard-guard";
-import GymDashboard from "@/components/gym-dashboard";
+import TodayView from '@/components/dashboard/today/today-view';
 
 export default function DashboardPage() {
-  return (
-    <DashboardGuard>
-      <GymDashboard />
-    </DashboardGuard>
-  );
+  return <TodayView />;
 }
