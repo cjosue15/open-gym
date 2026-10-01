@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import AuthAccess from "@/components/auth-access";
+import AccountMenu from "@/components/account-menu";
 
 type SetEntry = { id: number; reps: number; weight: number; unit: "kg" | "lb"; note: string };
 type Exercise = { id: number; name: string; cue: string; sets: SetEntry[]; open?: boolean };
@@ -83,7 +83,7 @@ export default function GymDashboard() {
         <header className="hidden h-20 items-center justify-between border-b border-white/10 px-8 lg:flex">
           <div className="font-mono text-[11px] uppercase tracking-[.18em] text-white/45">Semana 39 · 2026</div>
           <div className="flex items-center gap-4">
-            <AuthAccess />
+            <AccountMenu />
           </div>
         </header>
 
