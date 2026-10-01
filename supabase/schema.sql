@@ -62,3 +62,29 @@ create policy "owner manages routine exercises" on public.routine_exercises for 
 create policy "owner manages workouts" on public.workouts for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy "owner manages workout exercises" on public.workout_exercises for all using (exists(select 1 from public.workouts w where w.id = workout_id and w.user_id = auth.uid())) with check (exists(select 1 from public.workouts w where w.id = workout_id and w.user_id = auth.uid()));
 create policy "owner manages workout sets" on public.workout_sets for all using (exists(select 1 from public.workout_exercises we join public.workouts w on w.id = we.workout_id where we.id = workout_exercise_id and w.user_id = auth.uid())) with check (exists(select 1 from public.workout_exercises we join public.workouts w on w.id = we.workout_id where we.id = workout_exercise_id and w.user_id = auth.uid()));
+
+-- Mejor racha de días consecutivos con entrenamiento, sobre todo el historial del usuario (no limitado a una ventana de fechas).
+create or replace function public.best_workout_streak()
+returns integer
+language sql
+stable
+set search_path = public
+as $$
+  with days as (
+    select distinct date(started_at) as day
+    from public.workouts
+    where user_id = auth.uid() and finished_at is not null
+  ),
+  grouped as (
+    select day, day - (row_number() over (order by day))::integer as grp
+    from days
+  )
+  select coalesce(max(cnt), 0)::integer
+  from (
+    select count(*) as cnt
+    from grouped
+    group by grp
+  ) streaks;
+$$;
+
+grant execute on function public.best_workout_streak() to authenticated;
