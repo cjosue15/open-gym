@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Dumbbell, Loader2, MoreHorizontal, Plus } from 'lucide-react';
+import { Dumbbell, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -422,7 +422,7 @@ export default function TodayView() {
                 </>
               )}
             </Button>
-            {editing ? (
+            {editing && (
               <Button
                 onClick={cancelEdit}
                 disabled={saving}
@@ -430,13 +430,6 @@ export default function TodayView() {
                 className='h-12 border-white/15 bg-transparent px-4 font-mono text-sm uppercase tracking-wide text-white/70 hover:bg-white/10 hover:text-white sm:tracking-[.15em]'
               >
                 Cancelar
-              </Button>
-            ) : (
-              <Button
-                variant='outline'
-                className='h-12 border-white/15 bg-transparent px-4 font-mono text-sm uppercase tracking-wide text-white/70 hover:bg-white/10 hover:text-white sm:tracking-[.15em]'
-              >
-                <MoreHorizontal /> Notas del día
               </Button>
             )}
           </div>
