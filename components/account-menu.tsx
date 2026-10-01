@@ -27,7 +27,7 @@ export default function AccountMenu() {
 
   if (!userName) return null;
   return (
-    <button onClick={signOut} title="Cerrar sesión" className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-white/65 hover:text-[#d6ff3f]">
+    <button onClick={signOut} title="Cerrar sesión" className="flex items-center gap-2 font-mono text-sm uppercase tracking-wider text-white/65 hover:text-[#d6ff3f]">
       <span className="flex size-8 items-center justify-center rounded-full bg-[#d6ff3f] font-bold text-[#101311]">{userName.slice(0, 2).toUpperCase()}</span>
       <LogOut className="size-3" />
     </button>

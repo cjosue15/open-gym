@@ -51,12 +51,12 @@ export default function LoginForm() {
           <span className="font-heading text-3xl leading-none uppercase tracking-tight">Kilo</span>
         </div>
         <div className="border border-white/15 bg-[#171b18] p-6">
-          <p className="font-mono text-[10px] uppercase tracking-[.16em] text-[#d6ff3f]">Tu cuenta</p>
+          <p className="font-mono text-sm uppercase tracking-[.16em] text-[#d6ff3f]">Tu cuenta</p>
           <h1 className="mt-1 font-heading text-4xl uppercase">Entrar a Kilo</h1>
           {configured ? (
             <form onSubmit={sendLink}>
               <p className="mt-3 text-sm leading-relaxed text-white/55">Te enviaremos un enlace seguro para entrar a tu cuenta.</p>
-              <label className="mt-5 block font-mono text-[10px] uppercase tracking-wider text-white/45">
+              <label className="mt-5 block font-mono text-sm uppercase tracking-wider text-white/45">
                 Tu email
                 <input
                   required
@@ -67,7 +67,7 @@ export default function LoginForm() {
                   className="mt-2 h-11 w-full border border-white/15 bg-[#101311] px-3 text-sm text-white outline-none focus:border-[#d6ff3f]"
                 />
               </label>
-              <Button type="submit" disabled={sending} className="mt-4 h-11 w-full rounded-none bg-[#d6ff3f] font-mono text-[10px] uppercase tracking-wider text-[#101311]">
+              <Button type="submit" disabled={sending} className="mt-4 h-11 w-full rounded-none bg-[#d6ff3f] font-mono text-sm uppercase tracking-wider text-[#101311]">
                 <Mail /> {sending ? "Enviando…" : "Enviar enlace"}
               </Button>
             </form>
