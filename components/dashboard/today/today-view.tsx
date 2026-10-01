@@ -212,7 +212,9 @@ export default function TodayView() {
         window.localStorage.removeItem(draftKey(routine.id));
         setCompleted(saved);
         setEditing(false);
-        return isEditing ? 'Entrenamiento actualizado' : 'Entrenamiento guardado';
+        return isEditing
+          ? 'Entrenamiento actualizado'
+          : 'Entrenamiento guardado';
       },
       error: (error: unknown) =>
         error instanceof Error
@@ -404,28 +406,35 @@ export default function TodayView() {
             <Button
               onClick={handleSave}
               disabled={saving || totalSets === 0}
-              className='h-12 flex-1 rounded-none bg-[#d6ff3f] font-mono text-sm uppercase tracking-[.15em] text-[#101311] hover:bg-[#edff9c] disabled:opacity-60'
+              className='h-12 bg-[#d6ff3f] px-4 font-mono text-sm uppercase tracking-wide text-[#101311] hover:bg-[#edff9c] disabled:opacity-60 sm:tracking-[.15em]'
             >
-              <Dumbbell />{' '}
-              {saving
-                ? 'Guardando…'
-                : editing
-                  ? 'Guardar cambios'
-                  : 'Guardar entrenamiento'}
+              <Dumbbell />
+              {saving ? (
+                'Guardando…'
+              ) : editing ? (
+                'Guardar cambios'
+              ) : (
+                <>
+                  <span className='sm:hidden'>Guardar</span>
+                  <span className='hidden sm:inline'>
+                    Guardar entrenamiento
+                  </span>
+                </>
+              )}
             </Button>
             {editing ? (
               <Button
                 onClick={cancelEdit}
                 disabled={saving}
                 variant='outline'
-                className='h-12 rounded-none border-white/15 bg-transparent font-mono text-sm uppercase tracking-[.15em] text-white/70 hover:bg-white/10 hover:text-white'
+                className='h-12 border-white/15 bg-transparent px-4 font-mono text-sm uppercase tracking-wide text-white/70 hover:bg-white/10 hover:text-white sm:tracking-[.15em]'
               >
                 Cancelar
               </Button>
             ) : (
               <Button
                 variant='outline'
-                className='h-12 rounded-none border-white/15 bg-transparent font-mono text-sm uppercase tracking-[.15em] text-white/70 hover:bg-white/10 hover:text-white'
+                className='h-12 border-white/15 bg-transparent px-4 font-mono text-sm uppercase tracking-wide text-white/70 hover:bg-white/10 hover:text-white sm:tracking-[.15em]'
               >
                 <MoreHorizontal /> Notas del día
               </Button>

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, CircleHelp, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export type SetEntry = {
@@ -64,65 +64,72 @@ export default function ExerciseCard({
       </button>
       {exercise.open && (
         <div className='border-t border-white/10 px-4 pb-4 pt-3 sm:px-5'>
-          <div className='grid grid-cols-[32px_1fr_1fr_28px] gap-2 border-b border-white/10 pb-2 font-mono text-sm uppercase tracking-wider text-white/35 sm:grid-cols-[42px_100px_100px_1fr]'>
+          <div className='grid grid-cols-[56px_1fr_1fr] gap-2 border-b border-white/10 pb-2 font-mono text-sm uppercase tracking-wider text-white/35 sm:grid-cols-[42px_100px_100px_1fr]'>
             <span>Serie</span>
             <span>Reps</span>
             <span>Peso</span>
             <span className='hidden sm:block'>Nota</span>
           </div>
           {exercise.sets.map((set, itemIndex) => (
-            <div
-              key={set.id}
-              className='grid grid-cols-[32px_1fr_1fr_28px] items-center gap-2 border-b border-white/5 py-2.5 sm:grid-cols-[42px_100px_100px_1fr]'
-            >
-              <span className='font-mono text-sm text-white/55'>
-                {itemIndex + 1}
-              </span>
-              <input
-                aria-label={`Repeticiones serie ${itemIndex + 1}`}
-                value={set.reps || ''}
-                onChange={(event) =>
-                  update(exercise.id, set.id, 'reps', event.target.value)
-                }
-                type='number'
-                placeholder='—'
-                className='h-8 w-full border border-white/10 bg-[#101311] px-2 font-mono text-sm text-white outline-none focus:border-[#d6ff3f]'
-              />
-              <div className='flex h-8 border border-white/10 bg-[#101311] focus-within:border-[#d6ff3f]'>
+            <div key={set.id} className='border-b border-white/5 py-2.5'>
+              <div className='grid grid-cols-[56px_1fr_1fr] items-center gap-2 sm:grid-cols-[42px_100px_100px_1fr]'>
+                <span className='font-mono text-sm text-white/55'>
+                  {itemIndex + 1}
+                </span>
                 <input
-                  aria-label={`Peso serie ${itemIndex + 1}`}
-                  value={set.weight || ''}
+                  aria-label={`Repeticiones serie ${itemIndex + 1}`}
+                  value={set.reps || ''}
                   onChange={(event) =>
-                    update(exercise.id, set.id, 'weight', event.target.value)
+                    update(exercise.id, set.id, 'reps', event.target.value)
                   }
                   type='number'
                   placeholder='—'
-                  className='min-w-0 flex-1 bg-transparent px-2 font-mono text-sm text-white outline-none'
+                  className='h-10 w-full min-w-0 border border-white/10 bg-[#101311] px-2 font-mono text-sm text-white outline-none focus:border-[#d6ff3f]'
                 />
-                <button
-                  onClick={() =>
-                    update(
-                      exercise.id,
-                      set.id,
-                      'unit',
-                      set.unit === 'kg' ? 'lb' : 'kg',
-                    )
+                <div className='flex h-10 min-w-0 border border-white/10 bg-[#101311] focus-within:border-[#d6ff3f]'>
+                  <input
+                    aria-label={`Peso serie ${itemIndex + 1}`}
+                    value={set.weight || ''}
+                    onChange={(event) =>
+                      update(exercise.id, set.id, 'weight', event.target.value)
+                    }
+                    type='number'
+                    placeholder='—'
+                    className='min-w-0 flex-1 bg-transparent px-2 font-mono text-sm text-white outline-none'
+                  />
+                  <button
+                    onClick={() =>
+                      update(
+                        exercise.id,
+                        set.id,
+                        'unit',
+                        set.unit === 'kg' ? 'lb' : 'kg',
+                      )
+                    }
+                    className='shrink-0 border-l border-white/10 px-2 font-mono text-sm text-[#d6ff3f]'
+                  >
+                    {set.unit}
+                  </button>
+                </div>
+                <input
+                  aria-label={`Nota serie ${itemIndex + 1}`}
+                  value={set.note}
+                  onChange={(event) =>
+                    update(exercise.id, set.id, 'note', event.target.value)
                   }
-                  className='border-l border-white/10 px-1.5 font-mono text-sm text-[#d6ff3f]'
-                >
-                  {set.unit}
-                </button>
+                  placeholder='Añadir nota'
+                  className='hidden h-10 w-full bg-transparent px-2 text-sm text-white/60 outline-none placeholder:text-white/20 sm:block'
+                />
               </div>
               <input
-                aria-label={`Nota serie ${itemIndex + 1}`}
+                aria-label={`Nota serie ${itemIndex + 1} móvil`}
                 value={set.note}
                 onChange={(event) =>
                   update(exercise.id, set.id, 'note', event.target.value)
                 }
                 placeholder='Añadir nota'
-                className='hidden h-8 w-full bg-transparent px-2 text-sm text-white/60 outline-none placeholder:text-white/20 sm:block'
+                className='mt-2 h-9 w-full border border-white/10 bg-transparent px-2 text-sm text-white/60 outline-none placeholder:text-white/20 sm:hidden'
               />
-              <CircleHelp className='size-3 text-white/20 sm:hidden' />
             </div>
           ))}
           <button
