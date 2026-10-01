@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Dumbbell, Mail } from 'lucide-react';
+import { Dumbbell, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
@@ -15,7 +15,8 @@ const configured = Boolean(
 export default function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState('');
-  const [sending, setSending] = useState(false);
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [checking, setChecking] = useState(configured);
 
   useEffect(() => {
@@ -33,30 +34,27 @@ export default function LoginForm() {
     return () => listener.subscription.unsubscribe();
   }, [router]);
 
-  async function sendLink(event: React.FormEvent) {
+  async function signIn(event: React.FormEvent) {
     event.preventDefault();
     if (!configured) return;
-    setSending(true);
+    setSubmitting(true);
     const request = createClient()
-      .auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/dashboard` },
-      })
+      .auth.signInWithPassword({ email, password })
       .then(({ error }) => {
         if (error) throw error;
       });
     toast.promise(request, {
-      loading: 'Enviando enlace…',
-      success: `Enlace enviado. Revisa ${email}`,
+      loading: 'Entrando…',
+      success: 'Bienvenido',
       error: (error: unknown) =>
-        error instanceof Error ? error.message : 'No se pudo enviar el enlace',
+        error instanceof Error ? error.message : 'No se pudo iniciar sesión',
     });
     try {
       await request;
     } catch {
       /* handled by toast.promise */
     } finally {
-      setSending(false);
+      setSubmitting(false);
     }
   }
 
@@ -80,11 +78,14 @@ export default function LoginForm() {
           <h1 className='mt-1 font-heading text-4xl uppercase'>
             Entrar a Kilo
           </h1>
-          {configured ? (
-            <form onSubmit={sendLink}>
-              <p className='mt-3 text-sm leading-relaxed text-white/55'>
-                Te enviaremos un enlace seguro para entrar a tu cuenta.
-              </p>
+          {!configured ? (
+            <div className='mt-5 border-l-2 border-[#ff755f] bg-[#ff755f]/10 p-4 text-sm leading-relaxed text-white/65'>
+              Añade tus variables de Supabase en{' '}
+              <code className='text-[#d6ff3f]'>.env.local</code> para activar
+              cuentas y sincronización entre dispositivos.
+            </div>
+          ) : (
+            <form onSubmit={signIn}>
               <label className='mt-5 block font-mono text-sm uppercase tracking-wider text-white/45'>
                 Tu email
                 <input
@@ -93,23 +94,31 @@ export default function LoginForm() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder='tu@email.com'
+                  autoComplete='email'
+                  className='mt-2 h-11 w-full border border-white/15 bg-[#101311] px-3 text-sm text-white outline-none focus:border-[#d6ff3f]'
+                />
+              </label>
+              <label className='mt-4 block font-mono text-sm uppercase tracking-wider text-white/45'>
+                Contraseña
+                <input
+                  required
+                  type='password'
+                  minLength={6}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder='••••••••'
+                  autoComplete='current-password'
                   className='mt-2 h-11 w-full border border-white/15 bg-[#101311] px-3 text-sm text-white outline-none focus:border-[#d6ff3f]'
                 />
               </label>
               <Button
                 type='submit'
-                disabled={sending}
+                disabled={submitting}
                 className='mt-4 h-11 w-full rounded-none bg-[#d6ff3f] font-mono text-sm uppercase tracking-wider text-[#101311]'
               >
-                <Mail /> {sending ? 'Enviando…' : 'Enviar enlace'}
+                <LogIn /> {submitting ? 'Un momento…' : 'Entrar'}
               </Button>
             </form>
-          ) : (
-            <div className='mt-5 border-l-2 border-[#ff755f] bg-[#ff755f]/10 p-4 text-sm leading-relaxed text-white/65'>
-              Añade tus variables de Supabase en{' '}
-              <code className='text-[#d6ff3f]'>.env.local</code> para activar
-              cuentas y sincronización entre dispositivos.
-            </div>
           )}
         </div>
       </div>
