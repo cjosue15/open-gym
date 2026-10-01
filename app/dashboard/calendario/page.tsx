@@ -1,5 +1,5 @@
-import ComingSoon from '@/components/dashboard/coming-soon';
+import CalendarioView from '@/components/dashboard/calendario/calendario-view';
 
 export default function CalendarioPage() {
-  return <ComingSoon label='Calendario' />;
+  return <CalendarioView />;
 }
