@@ -73,6 +73,39 @@ export async function fetchTodayRoutine(
   };
 }
 
+export async function fetchRoutineById(
+  routineId: string,
+): Promise<TodayRoutine | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('routines')
+    .select(
+      'id, name, weekday, routine_exercises(id, name, position, target_sets, target_reps)',
+    )
+    .eq('id', routineId)
+    .is('deleted_at', null)
+    .limit(1)
+    .returns<TodayRoutineRow[]>();
+  if (error) throw error;
+
+  const routine = data[0];
+  if (!routine) return null;
+
+  return {
+    id: routine.id,
+    name: routine.name,
+    weekday: routine.weekday ?? getTodayWeekday(),
+    exercises: [...routine.routine_exercises]
+      .sort((a, b) => a.position - b.position)
+      .map((exercise) => ({
+        routineExerciseId: exercise.id,
+        name: exercise.name,
+        targetSets: exercise.target_sets,
+        targetReps: exercise.target_reps,
+      })),
+  };
+}
+
 export type CompletedSet = {
   reps: number;
   weight: number | null;
@@ -82,6 +115,7 @@ export type CompletedSet = {
 export type CompletedExercise = { name: string; sets: CompletedSet[] };
 export type CompletedWorkout = {
   id: string;
+  routineId: string | null;
   routineName: string | null;
   finishedAt: string;
   exercises: CompletedExercise[];
@@ -90,7 +124,8 @@ export type CompletedWorkout = {
 type CompletedWorkoutRow = {
   id: string;
   finished_at: string;
-  routines: { name: string } | null;
+  routine_id: string | null;
+  routines: { name: string; deleted_at: string | null } | null;
   workout_exercises: {
     name: string;
     position: number;
@@ -112,20 +147,21 @@ export async function fetchTodaysCompletedWorkout(): Promise<CompletedWorkout | 
   const { data, error } = await supabase
     .from('workouts')
     .select(
-      'id, finished_at, routines(name), workout_exercises(name, position, workout_sets(set_number, reps, weight, weight_unit, notes))',
+      'id, finished_at, routine_id, routines(name, deleted_at), workout_exercises(name, position, workout_sets(set_number, reps, weight, weight_unit, notes))',
     )
     .gte('started_at', startOfDay.toISOString())
     .not('finished_at', 'is', null)
     .order('started_at', { ascending: false })
-    .limit(1)
+    .limit(5)
     .returns<CompletedWorkoutRow[]>();
   if (error) throw error;
 
-  const workout = data[0];
+  const workout = data.find((row) => !row.routines?.deleted_at);
   if (!workout) return null;
 
   return {
     id: workout.id,
+    routineId: workout.routine_id,
     routineName: workout.routines?.name ?? null,
     finishedAt: workout.finished_at,
     exercises: [...workout.workout_exercises]
@@ -200,13 +236,14 @@ export async function updateWorkout(
 
   const { data: workout, error: workoutError } = await supabase
     .from('workouts')
-    .select('finished_at')
+    .select('finished_at, routine_id')
     .eq('id', workoutId)
     .single();
   if (workoutError) throw workoutError;
 
   return {
     id: workoutId,
+    routineId: workout.routine_id,
     routineName: input.routineName,
     finishedAt: workout.finished_at,
     exercises: input.exercises.map((exercise) => ({
@@ -288,6 +325,7 @@ export async function saveWorkout(input: {
 
   return {
     id: workout.id,
+    routineId: input.routineId,
     routineName: input.routineName,
     finishedAt: nowIso,
     exercises: input.exercises.map((exercise) => ({

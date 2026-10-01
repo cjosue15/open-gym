@@ -8,16 +8,20 @@ export default function RoutinesView({
   routines,
   loading,
   deletingId,
+  checkingTodayId,
   onCreate,
   onEdit,
   onDelete,
+  onUseToday,
 }: {
   routines: Routine[];
   loading: boolean;
   deletingId: string | null;
+  checkingTodayId: string | null;
   onCreate: () => void;
   onEdit: (routine: Routine) => void;
   onDelete: (routine: Routine) => void;
+  onUseToday: (routine: Routine) => void;
 }) {
   return (
     <>
@@ -74,8 +78,10 @@ export default function RoutinesView({
               key={routine.id}
               routine={routine}
               deleting={deletingId === routine.id}
+              checkingToday={checkingTodayId === routine.id}
               onEdit={() => onEdit(routine)}
               onDelete={() => onDelete(routine)}
+              onUseToday={() => onUseToday(routine)}
             />
           ))}
           <button

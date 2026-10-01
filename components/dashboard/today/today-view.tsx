@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Dumbbell, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import ExerciseCard, {
 } from '@/components/dashboard/today/exercise-card';
 import { WEEKDAYS } from '@/components/day-picker';
 import {
+  fetchRoutineById,
   fetchTodayRoutine,
   fetchTodaysCompletedWorkout,
   getTodayWeekday,
@@ -21,6 +23,7 @@ import {
   type CompletedWorkout,
   type TodayRoutine,
 } from '@/lib/supabase/workouts';
+import { fetchRoutines, type Routine } from '@/lib/supabase/routines';
 
 function draftKey(routineId: string) {
   return `kilo-draft-${routineId}-${new Date().toISOString().slice(0, 10)}`;
@@ -59,22 +62,42 @@ function exercisesFromCompleted(completed: CompletedWorkout): Exercise[] {
 }
 
 export default function TodayView() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [routine, setRoutine] = useState<TodayRoutine | null>(null);
   const [completed, setCompleted] = useState<CompletedWorkout | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [allRoutines, setAllRoutines] = useState<Routine[]>([]);
+  const [switching, setSwitching] = useState(false);
   const weekday = getTodayWeekday();
 
   useEffect(() => {
-    Promise.all([fetchTodayRoutine(weekday), fetchTodaysCompletedWorkout()])
-      .then(([todayRoutine, todaysCompleted]) => {
-        setRoutine(todayRoutine);
+    Promise.all([
+      fetchTodayRoutine(weekday),
+      fetchTodaysCompletedWorkout(),
+      fetchRoutines(),
+    ])
+      .then(async ([todayRoutine, todaysCompleted, routines]) => {
         setCompleted(todaysCompleted);
-        if (todayRoutine && !todaysCompleted) {
-          const draft = window.localStorage.getItem(draftKey(todayRoutine.id));
-          setExercises(draft ? JSON.parse(draft) : seedExercises(todayRoutine));
+        setAllRoutines(routines);
+
+        let activeRoutine = todayRoutine;
+        if (
+          todaysCompleted?.routineId &&
+          todaysCompleted.routineId !== todayRoutine?.id
+        ) {
+          activeRoutine = await fetchRoutineById(todaysCompleted.routineId);
+        }
+        setRoutine(activeRoutine);
+
+        if (activeRoutine && !todaysCompleted) {
+          const draft = window.localStorage.getItem(draftKey(activeRoutine.id));
+          setExercises(
+            draft ? JSON.parse(draft) : seedExercises(activeRoutine),
+          );
         }
       })
       .catch((error: unknown) =>
@@ -85,6 +108,21 @@ export default function TodayView() {
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    const requestedRoutineId = searchParams.get('routine');
+    if (!requestedRoutineId) return;
+    router.replace('/dashboard');
+    if (completed) {
+      toast.error('Ya completaste tu entrenamiento de hoy', {
+        description: 'Edítalo si quieres ajustar las series.',
+      });
+      return;
+    }
+    selectRoutineForToday(requestedRoutineId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   useEffect(() => {
     if (!routine || completed) return;
@@ -185,31 +223,52 @@ export default function TodayView() {
     setEditing(false);
   }
 
+  function selectRoutineForToday(routineId: string) {
+    setSwitching(true);
+    fetchRoutineById(routineId)
+      .then((picked) => {
+        if (!picked) return;
+        setRoutine(picked);
+        const draft = window.localStorage.getItem(draftKey(picked.id));
+        setExercises(draft ? JSON.parse(draft) : seedExercises(picked));
+      })
+      .catch((error: unknown) =>
+        toast.error('No se pudo cargar la rutina', {
+          description: error instanceof Error ? error.message : undefined,
+        }),
+      )
+      .finally(() => setSwitching(false));
+  }
+
   async function handleSave() {
-    if (!routine) return;
+    if (!completed && !routine) return;
     if (totalSets === 0) {
       toast.error('Registra al menos una serie antes de guardar');
       return;
     }
     setSaving(true);
-    const payload = {
-      routineName: routine.name,
-      exercises: exercises.map((exercise, index) => ({
-        routineExerciseId: routine.exercises[index]?.routineExerciseId ?? null,
-        name: exercise.name,
-        sets: exercise.sets,
-      })),
-    };
+    const exercisesPayload = exercises.map((exercise, index) => ({
+      routineExerciseId: routine?.exercises[index]?.routineExerciseId ?? null,
+      name: exercise.name,
+      sets: exercise.sets,
+    }));
     const isEditing = Boolean(completed);
     const request = completed
-      ? updateWorkout(completed.id, payload)
-      : saveWorkout({ routineId: routine.id, ...payload });
+      ? updateWorkout(completed.id, {
+          routineName: routine?.name ?? completed.routineName,
+          exercises: exercisesPayload,
+        })
+      : saveWorkout({
+          routineId: routine!.id,
+          routineName: routine!.name,
+          exercises: exercisesPayload,
+        });
     toast.promise(request, {
       loading: isEditing
         ? 'Actualizando entrenamiento…'
         : 'Guardando entrenamiento…',
       success: (saved) => {
-        window.localStorage.removeItem(draftKey(routine.id));
+        if (routine) window.localStorage.removeItem(draftKey(routine.id));
         setCompleted(saved);
         setEditing(false);
         return isEditing
@@ -235,30 +294,6 @@ export default function TodayView() {
       <p className='flex items-center gap-2 font-mono text-sm uppercase tracking-wider text-white/40'>
         <Loader2 className='size-4 animate-spin' /> Cargando tu día…
       </p>
-    );
-  }
-
-  if (!routine) {
-    return (
-      <div className='flex min-h-[50vh] flex-col items-center justify-center text-center'>
-        <p className='font-mono text-sm uppercase tracking-[.17em] text-[#d6ff3f]'>
-          {WEEKDAYS[weekday]}
-        </p>
-        <h1 className='mt-2 font-heading text-5xl uppercase tracking-tight'>
-          Sin rutina para hoy
-        </h1>
-        <p className='mt-3 max-w-sm text-sm leading-relaxed text-white/45'>
-          Asigna una rutina a {WEEKDAYS[weekday]} para empezar a registrar tu
-          entrenamiento.
-        </p>
-        <Button
-          render={<Link href='/dashboard/rutinas' />}
-          nativeButton={false}
-          className='mt-6 h-11 rounded-none bg-[#d6ff3f] px-6 font-mono text-sm uppercase tracking-wider text-[#101311] hover:bg-[#edff9c]'
-        >
-          Ir a rutinas
-        </Button>
-      </div>
     );
   }
 
@@ -331,6 +366,54 @@ export default function TodayView() {
     );
   }
 
+  if (!routine && !editing) {
+    return (
+      <div className='flex min-h-[50vh] flex-col items-center justify-center text-center'>
+        <p className='font-mono text-sm uppercase tracking-[.17em] text-[#d6ff3f]'>
+          {WEEKDAYS[weekday]}
+        </p>
+        <h1 className='mt-2 font-heading text-5xl uppercase tracking-tight'>
+          Sin rutina para hoy
+        </h1>
+        <p className='mt-3 max-w-sm text-sm leading-relaxed text-white/45'>
+          Asigna una rutina a {WEEKDAYS[weekday]} para empezar a registrar tu
+          entrenamiento.
+        </p>
+        <Button
+          render={<Link href='/dashboard/rutinas' />}
+          nativeButton={false}
+          className='mt-6 h-11 rounded-none bg-[#d6ff3f] px-6 font-mono text-sm uppercase tracking-wider text-[#101311] hover:bg-[#edff9c]'
+        >
+          Ir a rutinas
+        </Button>
+        {allRoutines.length > 0 && (
+          <div className='mt-10 w-full max-w-sm'>
+            <p className='mb-3 font-mono text-sm uppercase tracking-[.17em] text-white/30'>
+              O usa otra rutina hoy
+            </p>
+            <div className='space-y-2'>
+              {allRoutines.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => selectRoutineForToday(item.id)}
+                  disabled={switching}
+                  className='flex w-full items-center justify-between border border-white/15 px-4 py-3 text-left font-mono text-sm uppercase tracking-wider text-white/70 transition hover:border-[#d6ff3f] hover:text-white disabled:opacity-50'
+                >
+                  {item.name}
+                  <span className='text-white/30'>
+                    {item.exercises.length} ejercicios
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const routineLabel = routine?.name ?? completed?.routineName ?? 'Libre';
+
   return (
     <>
       <section className='mb-8 flex flex-col gap-6 lg:mb-10 lg:flex-row lg:items-end lg:justify-between'>
@@ -338,7 +421,7 @@ export default function TodayView() {
           <div className='mb-3 flex items-center gap-2'>
             <span className='h-2 w-2 rounded-full bg-[#d6ff3f] shadow-[0_0_14px_#d6ff3f]' />
             <span className='font-mono text-sm uppercase tracking-[.17em] text-[#d6ff3f]'>
-              {WEEKDAYS[weekday]} · {routine.name}
+              {WEEKDAYS[weekday]} · {routineLabel}
             </span>
           </div>
           <h1 className='font-heading text-5xl leading-[.85] font-semibold uppercase tracking-[-.045em] sm:text-7xl'>
@@ -363,9 +446,9 @@ export default function TodayView() {
         />
         <Metric
           label='Rutina'
-          value={routine.name}
+          value={routineLabel}
           suffix=''
-          note={`${routine.exercises.length} ejercicios`}
+          note={routine ? `${routine.exercises.length} ejercicios` : 'Editando'}
         />
       </section>
 
@@ -377,7 +460,7 @@ export default function TodayView() {
                 Entrenamiento activo
               </p>
               <h2 className='font-heading text-3xl uppercase tracking-tight'>
-                {WEEKDAYS[weekday]} · {routine.name}
+                {WEEKDAYS[weekday]} · {routineLabel}
               </h2>
             </div>
             <Button
@@ -436,28 +519,30 @@ export default function TodayView() {
         </section>
 
         <aside className='space-y-5 xl:sticky xl:top-8'>
-          <article className='border border-white/10 bg-[#171b18]'>
-            <div className='border-b border-white/10 px-5 py-4'>
-              <p className='font-mono text-sm uppercase tracking-[.17em] text-white/50'>
-                Objetivo de la rutina
-              </p>
-            </div>
-            <div className='divide-y divide-white/5'>
-              {routine.exercises.map((exercise, index) => (
-                <div
-                  key={index}
-                  className='flex items-center justify-between px-5 py-2.5'
-                >
-                  <span className='font-mono text-sm text-white/60'>
-                    {exercise.name}
-                  </span>
-                  <span className='font-mono text-sm text-white/30'>
-                    {exercise.targetSets} × {exercise.targetReps}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </article>
+          {routine && (
+            <article className='border border-white/10 bg-[#171b18]'>
+              <div className='border-b border-white/10 px-5 py-4'>
+                <p className='font-mono text-sm uppercase tracking-[.17em] text-white/50'>
+                  Objetivo de la rutina
+                </p>
+              </div>
+              <div className='divide-y divide-white/5'>
+                {routine.exercises.map((exercise, index) => (
+                  <div
+                    key={index}
+                    className='flex items-center justify-between px-5 py-2.5'
+                  >
+                    <span className='font-mono text-sm text-white/60'>
+                      {exercise.name}
+                    </span>
+                    <span className='font-mono text-sm text-white/30'>
+                      {exercise.targetSets} × {exercise.targetReps}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          )}
         </aside>
       </div>
     </>

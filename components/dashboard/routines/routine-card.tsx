@@ -10,13 +10,17 @@ import type { Routine } from '@/lib/supabase/routines';
 export default function RoutineCard({
   routine,
   deleting,
+  checkingToday,
   onEdit,
   onDelete,
+  onUseToday,
 }: {
   routine: Routine;
   deleting: boolean;
+  checkingToday: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  onUseToday: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
   return (
@@ -103,8 +107,12 @@ export default function RoutineCard({
         >
           Editar
         </button>
-        <button className='flex-1 border-l border-white/10 py-3 font-mono text-sm uppercase tracking-wider text-[#d6ff3f] transition hover:bg-[#d6ff3f]/10'>
-          Usar hoy
+        <button
+          onClick={onUseToday}
+          disabled={checkingToday}
+          className='flex-1 border-l border-white/10 py-3 font-mono text-sm uppercase tracking-wider text-[#d6ff3f] transition hover:bg-[#d6ff3f]/10 disabled:opacity-50'
+        >
+          {checkingToday ? 'Verificando…' : 'Usar hoy'}
         </button>
       </div>
     </article>
