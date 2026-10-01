@@ -45,6 +45,43 @@ function seedExercises(routine: TodayRoutine): Exercise[] {
   }));
 }
 
+function reconcileExercises(
+  routine: TodayRoutine,
+  draft: Exercise[],
+): Exercise[] {
+  return routine.exercises.map((exercise, index) => {
+    const existing = draft.find((item) => item.name === exercise.name);
+    if (existing) {
+      return {
+        ...existing,
+        id: index + 1,
+        cue: `${exercise.targetSets} series objetivo · ${exercise.targetReps} reps`,
+        open: index === 0,
+      };
+    }
+    return {
+      id: index + 1,
+      name: exercise.name,
+      cue: `${exercise.targetSets} series objetivo · ${exercise.targetReps} reps`,
+      open: index === 0,
+      sets: Array.from({ length: exercise.targetSets }, (_, setIndex) => ({
+        id: setIndex + 1,
+        reps: 0,
+        weight: 0,
+        unit: 'kg' as const,
+        note: '',
+      })),
+    };
+  });
+}
+
+function loadExercises(routine: TodayRoutine): Exercise[] {
+  const stored = window.localStorage.getItem(draftKey(routine.id));
+  if (!stored) return seedExercises(routine);
+  const draft = JSON.parse(stored) as Exercise[];
+  return reconcileExercises(routine, draft);
+}
+
 function exercisesFromCompleted(completed: CompletedWorkout): Exercise[] {
   return completed.exercises.map((exercise, index) => ({
     id: index + 1,
@@ -94,10 +131,7 @@ export default function TodayView() {
         setRoutine(activeRoutine);
 
         if (activeRoutine && !todaysCompleted) {
-          const draft = window.localStorage.getItem(draftKey(activeRoutine.id));
-          setExercises(
-            draft ? JSON.parse(draft) : seedExercises(activeRoutine),
-          );
+          setExercises(loadExercises(activeRoutine));
         }
       })
       .catch((error: unknown) =>
@@ -215,7 +249,8 @@ export default function TodayView() {
 
   function startEdit() {
     if (!completed) return;
-    setExercises(exercisesFromCompleted(completed));
+    const base = exercisesFromCompleted(completed);
+    setExercises(routine ? reconcileExercises(routine, base) : base);
     setEditing(true);
   }
 
@@ -229,8 +264,7 @@ export default function TodayView() {
       .then((picked) => {
         if (!picked) return;
         setRoutine(picked);
-        const draft = window.localStorage.getItem(draftKey(picked.id));
-        setExercises(draft ? JSON.parse(draft) : seedExercises(picked));
+        setExercises(loadExercises(picked));
       })
       .catch((error: unknown) =>
         toast.error('No se pudo cargar la rutina', {
