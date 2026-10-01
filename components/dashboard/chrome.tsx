@@ -17,7 +17,7 @@ export default function DashboardChrome({
   return (
     <main className='min-h-screen bg-[#101311] text-[#eff0e7] selection:bg-[#d6ff3f] selection:text-[#101311]'>
       <div className='grain pointer-events-none fixed inset-0 opacity-30' />
-      <header className='relative z-20 flex h-16 items-center justify-between border-b border-white/10 px-4 lg:hidden'>
+      <header className='relative z-20 flex min-h-16 items-center justify-between border-b border-white/10 px-4 pt-[env(safe-area-inset-top)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] lg:hidden'>
         <Brand />
         <Button
           variant='ghost'
