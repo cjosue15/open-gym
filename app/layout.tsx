@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Barlow_Condensed, DM_Mono } from 'next/font/google';
 import './globals.css';
 import PwaRegister from '@/components/pwa-register';
@@ -19,11 +19,25 @@ export const metadata: Metadata = {
   title: 'Kilo — entrenamiento con intención',
   description: 'Registra tus entrenamientos y mira tu progreso.',
   applicationName: 'Kilo',
+  manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Kilo',
   },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/apple-icon.png',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#101311',
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
