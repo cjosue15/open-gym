@@ -2,14 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  BarChart3,
-  CalendarDays,
-  Dumbbell,
-  Layers3,
-  Settings2,
-  X,
-} from 'lucide-react';
+import { BarChart3, CalendarDays, Dumbbell, Layers3, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Brand from '@/components/dashboard/brand';
@@ -71,11 +64,6 @@ export default function Sidebar({
             </Link>
           );
         })}
-      </div>
-      <div className='mt-auto'>
-        <button className='flex items-center gap-2 px-3 font-mono text-sm uppercase tracking-[.12em] text-white/35 hover:text-white'>
-          <Settings2 className='size-4' /> Ajustes
-        </button>
       </div>
     </aside>
   );
