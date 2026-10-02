@@ -25,8 +25,20 @@ import {
 } from '@/lib/supabase/workouts';
 import { fetchRoutines, type Routine } from '@/lib/supabase/routines';
 
+function localDateKey(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function draftKey(routineId: string) {
-  return `kilo-draft-${routineId}-${new Date().toISOString().slice(0, 10)}`;
+  return `kilo-draft-${routineId}-${localDateKey()}`;
+}
+
+function overrideRoutineKey() {
+  return `kilo-override-${localDateKey()}`;
 }
 
 function seedExercises(routine: TodayRoutine): Exercise[] {
@@ -127,6 +139,12 @@ export default function TodayView() {
           todaysCompleted.routineId !== todayRoutine?.id
         ) {
           activeRoutine = await fetchRoutineById(todaysCompleted.routineId);
+        } else if (!todaysCompleted) {
+          const overrideId = window.localStorage.getItem(overrideRoutineKey());
+          if (overrideId && overrideId !== todayRoutine?.id) {
+            const overrideRoutine = await fetchRoutineById(overrideId);
+            if (overrideRoutine) activeRoutine = overrideRoutine;
+          }
         }
         setRoutine(activeRoutine);
 
@@ -263,6 +281,7 @@ export default function TodayView() {
     fetchRoutineById(routineId)
       .then((picked) => {
         if (!picked) return;
+        window.localStorage.setItem(overrideRoutineKey(), picked.id);
         setRoutine(picked);
         setExercises(loadExercises(picked));
       })
@@ -302,7 +321,10 @@ export default function TodayView() {
         ? 'Actualizando entrenamiento…'
         : 'Guardando entrenamiento…',
       success: (saved) => {
-        if (routine) window.localStorage.removeItem(draftKey(routine.id));
+        if (routine) {
+          window.localStorage.removeItem(draftKey(routine.id));
+          window.localStorage.removeItem(overrideRoutineKey());
+        }
         setCompleted(saved);
         setEditing(false);
         return isEditing
