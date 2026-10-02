@@ -15,7 +15,11 @@ function toKg(weight: number | null, unit: 'kg' | 'lb'): number {
 }
 
 function dayKey(iso: string): string {
-  return iso.slice(0, 10);
+  const date = new Date(iso);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function daysAgo(n: number): Date {
@@ -226,7 +230,8 @@ export async function fetchProgress(): Promise<ProgressData> {
 
 export async function fetchBestStreak(): Promise<number> {
   const supabase = createClient();
-  const { data, error } = await supabase.rpc('best_workout_streak');
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const { data, error } = await supabase.rpc('best_workout_streak', { tz });
   if (error) throw error;
   return data ?? 0;
 }
